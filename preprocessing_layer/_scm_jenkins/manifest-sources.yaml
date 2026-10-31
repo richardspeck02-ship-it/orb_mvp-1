@@ -1,0 +1,26 @@
+version: "1.0"
+sources:
+name: global-manifest
+location:
+locationType: project
+file: _scm_jenkins/manifest.yaml
+manifest:
+type: simple
+path: common
+required: true
+name: preprocessing-layer-manifest
+location:
+locationType: project
+file: preprocessing_layer/_scm_jenkins/manifest.yaml
+manifest:
+type: simple
+path: common
+required: true
+name: preprocessing-layer-environment
+location:
+locationType: project
+file: preprocessing_layer/_scm_jenkins/manifest.yaml
+manifest:
+type: by-environment
+path: environments
+required: true

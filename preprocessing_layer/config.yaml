@@ -1,0 +1,89 @@
+llmModel:
+  defaultModel: gpt-4o
+  defaultTemperature: 0.3
+  apiVersion: "2024-12-01-preview"
+  baseUrl: https://genaiapimna.jnj.com/openai-chat
+  apiType: azure
+  apiKey: llm_key
+  structuredOutputRetries: 3
+  inputCost: 0.00000250
+  outputCost: 0.00001000
+  allowedModels:
+    - o3-mini
+    - gpt-4o
+    - gpt-4o-mini
+    - gpt-4o-global
+    - gpt-4o-mini-global
+    - gpt-4-turbo
+    - gpt-4-32k
+    - gpt-4
+    - gpt-35-turbo-16k
+    - gpt-35-turbo
+
+qdrant:
+  host: qdrant
+  port: 6333
+  embeddingModel: "mixedbread-ai/mxbai-embed-large-v1"
+  sparseModel: "prithivida/Splade_PP_en_v1"
+
+infinity:
+  model: "dunzhang/stella_en_400M_v5"
+  url: http://awsaklnval0001.jnj.com:445
+
+redis:
+  host: valkey-primary.valkey.cluster.svc.local
+  port: 6379
+  db: 0
+  envPrefix: "predev"
+  # (Optional)
+  # Number of times a failed embedding is retried before its logged to the dead letter queue.
+  embedRetries: 3
+  # Name of the dead letter queue to use.
+  dlQueueName: dead-letter-queue
+  # Name of the stream where the publisher in the preprocessing layer sends messages to/consumers in embedding layer reads messages from.
+  embedQueueName: embed-queue
+  # Name of the group the multiple consumers of the embedding layer will be added to.
+  embedConsumerGroupName: embedders
+  # Name of the stream where the publisher in the embedding layer sends messages to/consumers in generation layer reads messages from.
+  generatorQueueName: generate-queue
+  # Name of the group the multiple consumers of the generator layer will be added to.
+  generatorConsumerGroupName: generators
+  # (Optional)
+  # Name of the consumer instance. Must be unique for every replica.
+  # Defaults to embed_consumer_{socket.gethostname()}.
+  workerName: test-worker
+  # Number of messages each consumer reads at a time.
+  batchSize: 1
+  # (Optional)
+  # Duration in milliseconds for which the stream is polled for 'batchSize' messages.
+  # Defaults to 5000.
+  pollTimeMs: 5000
+  ## Configurations for the message reclaimer service.
+  reclaim:
+    # Time to wait after every run.
+    intervalSeconds: 600
+    # Maximum number of pending messages to distribute.
+    maxMessages: 3
+    # Duration in milliseconds for a pending message after which, it qualifies for distribution.
+    idleThresholdMs: 600000
+
+s3:
+  region: us-east-1
+  bucket: demo-runbook
+  arn: arn:aws:iam::453104156224:role/ORB-Pilot-EKS-S3-Role
+
+ui:
+  theme: freddyaboulton/this-theme-does-not-exist-2
+
+agents:
+  changeSingleFiles: true
+  parseRetries: 5
+  reflections: 0
+
+searchCache:
+  redisUrl: redis://awsaklnval0001.jnj.com:53
+  distanceThreshold: 0.15
+
+uvicorn:
+  host: "0.0.0.0"
+  port: 80

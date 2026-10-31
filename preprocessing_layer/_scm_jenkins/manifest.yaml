@@ -1,0 +1,279 @@
+## Pipeline details across environments (defaults) retrigger
+common:
+pipelineType: app-dev
+debug: true
+unitTest:
+type: pytest
+coverageDirs: src
+docker Image: jnj.artifactrepo.jnj.com/python:3.11.5-alpine
+dir: project
+pytestCommand: "python pytest cove.cov-report-xml-cov-report-term-missing"
+installRequirements: true
+installRequirementsCommand: pip install -U pip && pip install -r requirements.txt'
+lint:
+type: pylint
+docker Image: jnj.artifactrepo.jnj.com/python:3.11.5-alpine
+installRequirements: true
+installRequirementsCommand: pip install -U pip && pip install requirements.txt
+FailUnder: 8
+pylintModules:
+ -src
+
+staticAnalysis:
+
+type: multi
+
+stages:
+
+sonar:
+
+coverageCleanup:
+
+coverage.xml
+
+enabled: true
+
+type: sonar
+
+shortLivedAnalysis: true
+
+longLivedAnalysis: true
+
+shortLivedBuildResults:
+
+BLOCKER:
+
+FAILURE: 10
+
+UNSTABLE: 5
+
+CRITICAL:
+
+FAILURE: 10
+
+UNSTABLE: 5
+
+MAJOR:
+
+FAILURE: 20
+
+UNSTABLE: 10
+
+MINOR:
+
+FAILURE: 20
+
+UNSTABLE: 10
+
+INFO:
+
+FAILURE: 20
+
+UNSTABLE: 5
+
+QUALITY_GATE:
+
+#Error should be FAILURE, however since the team understands the risks and
+
+#wants to come back to fixing sonarAnalysis, we are keeping the pipeline as passing
+
+ERROR: SUCCESS
+
+WARN: SUCCESS
+
+longLivedBuildResults:
+
+BLOCKER:
+
+FAILURE: 100
+
+UNSTABLE: 5
+
+CRITICAL:
+
+FAILURE: 100
+
+UNSTABLE: 5
+
+MAJOR:
+
+FAILURE: 100
+
+UNSTABLE: 10
+
+MINOR:
+
+FAILURE: 100 UNSTABLE: 10
+
+INFO:
+
+FAILURE: 100
+
+UNSTABLE: 5
+
+QUALITY_GATE:
+
+# Error should be FAILURE, however since the team understands the risks and
+
+ERROR: SUCCESS
+
+# wants to come back to fixing sonarAnalysis, we are keeping the pipeline as passing
+
+WARN: SUCCESS
+
+versionCalculation:
+type: gitversion
+patternType: jnj-developer-branch
+package:
+type: helm
+versionFileUpdates:
+type: yaml
+file: _scm_helm/Chart.yaml
+path: appVersion
+type: yaml
+file: scm_helm/values.yaml
+path: preprocessingLayer.image.tag
+publish:
+type: "multi"
+stages:
+Helm:
+type: helm
+Docker:
+type: docker
+snykImageScan:
+enabled: false
+credsList:
+registry: https://jnj.artifactrepo.jnj.com
+credentialsId: artifactory
+registry: https://jfof-docker.artifactrepo.jnj.com
+credentialsId: artifactory
+buildAnalysis:
+buildTimeout InMinutes: 90
+deploy:
+type: helm
+chartRepoCredentialsId: "sourcecode-bitbucket"
+kubernetesConfig:
+type: eks
+name: itx-bin-ekscluster-production
+region: us-east-1
+credentialsId: itx-bin-eatjenkinsadminapi
+atomic: true
+resolveArtifacts:
+enabled: false
+prerelease:
+type: none
+confirmVersion: true
+updateChangelog: false
+versionFileUpdates:
+type: yaml
+file: _scm_helm/Chart.yaml
+path: version
+type: yaml
+file: _scm_helm/Chart.yaml
+path: appVersion
+type: yaml
+file: _scm_helm/values.yaml
+path: image.tag
+release:
+type: none
+confirmVersion: true
+updateChangelog: false
+releaseDestination: main
+versionFileUpdates:
+type: yaml
+file: _scm_helm/Chart.yaml
+path: version
+type: yaml
+file: _scm_helm/Chart.yaml
+path: appVersion
+type: yaml
+file: _scm_helm/values.yaml
+path: image.tag
+calculateChanges:
+branch: main
+watchChanges InPaths:
+preprocessing_layer/.*
+_scm_container/orb-generation-preprocessing/*
+#Pipeline details per environment
+environments:
+PREDEV:
+unitTest:
+enabled: false
+lint:
+enabled: false
+cmdb:
+appid: APP000010035788
+deployment Environment: development
+staticAnalysis:
+enabled: false
+buildAnalysis:
+enabled: false
+comment: "Already scanned by Snyk."
+versionCalculation:
+enabled: false
+package:
+enabled: true
+publish:
+enabled: true
+stages:
+Docker:
+enabled: true
+Helm:
+enabled: true
+deploy:
+enabled: false
+atomic: true
+name: orb-generation-predev
+namespace: orb-generation-predev
+createNamespace: true
+configFiles:
+repo: https://sourcecode.jnj.com/scm/asx-jfof/ai-orb-generation.git repoCredentialsId: "sourcecode-bitbucket"
+files:
+- file: _scm_config/predev.values.yaml
+type: plaintext
+resolveArtifacts:
+enabled: false
+DEV:
+package:
+enabled: true
+unitTest:
+enabled: false
+lint:
+enabled: false
+cmdb:
+appid: APP000010035788
+deployment Environment: development
+versionCalculation:
+enabled: true
+patternType: jnj-dev-branch
+staticAnalysis:
+enabled: false
+stages:
+sonar:
+longLivedAnalysis: true
+buildAnalysis:
+enabled: false
+comment: Already scanned and fixed in Predev..
+publish:
+enabled: true
+stages:
+Docker:
+enabled: true
+Helm:
+enabled: true
+deploy:
+enabled: true
+name: orb-generation-dev
+atomic: true
+namespace: orb-generation-dev
+createNamespace: true
+configFiles:
+repo: https://sourcecode.jnj.com/scm/asx-jfof/orb-generation.git
+repoCredentialsId: "sourcecode-bitbucket"
+files:
+file: _scm_config/dev.values.yaml
+type: plaintext
+resolveArtifacts:
+enabled: false
+resolveArtifacts:
+enabled: false

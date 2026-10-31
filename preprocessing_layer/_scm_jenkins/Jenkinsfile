@@ -1,0 +1,10 @@
+#!/bin/groovy
+@Library("jpm_shared_lib@1.x")
+Import org.jnj.
+def args[:]
+args.debug true
+args.manifestSourcesFilsombedding layer/scm_jenkins/manifest-sources.yaml
+args.environmentRappingfile "enbedding layer/_scm_jenkins/environment-mapping.yan!" new pipelines.stdPipeline().execute(args)
+//imparts the latest stable version of JPM
+// set to true for verbose logs
+//invoke the 3P Standard Pipeline
