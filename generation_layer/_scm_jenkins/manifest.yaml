@@ -1,0 +1,88 @@
+## Pipeline details across environments (defaults) retrigger
+common:
+  versionCalculation:
+    type: gitversion
+    patternType: jnj-developer-branch
+
+  versionFileUpdates:
+    - type: yaml
+      file: _scm_helm/Chart.yaml
+      path: appVersion
+    - type: yaml
+      file: _scm_helm/values.yaml
+      path: generationLayer.image.tag
+
+  prerelease:
+    type: none
+    confirmVersion: true
+    updateChangelog: false
+
+  release:
+    type: none
+    confirmVersion: true
+    updateChangelog: false
+    releaseDestination: main
+
+  calculateChanges:
+    branch: main
+    watchChangesInPaths: # paths to 'watch' for changes
+      - generation_layer/.*
+      - _scm_container/orb-gen-write/*
+
+environments:
+  PREDEV:
+    unitTest:
+      enabled: false
+    lint:
+      enabled: false
+    cmdb:
+      appid: APP000010035788
+      deploymentEnvironment: development
+    staticAnalysis:
+      enabled: false
+    buildAnalysis:
+      enabled: false
+      comment: "Already scanned by Snyk."
+    versionCalculation:
+      enabled: true
+    package:
+      enabled: true
+    publish:
+      enabled: true
+      stages:
+        Docker:
+          enabled: true
+        Helm:
+          enabled: true
+    deploy:
+      enabled: false
+
+  DEV:
+    unitTest:
+      enabled: false
+    package:
+      enabled: true
+    lint:
+      enabled: false
+    cmdb:
+      appid: APP000010035788
+      deploymentEnvironment: development
+    versionCalculation:
+      enabled: true
+    staticAnalysis:
+      enabled: false
+      stages:
+        sonar:
+          longLivedAnalysis: true
+    buildAnalysis:
+      enabled: false
+      comment: Already scanned and fixed in Predev.
+    publish:
+      enabled: true
+      stages:
+        Docker:
+          enabled: true
+        Helm:
+          enabled: true
+    deploy:
+      enabled: false

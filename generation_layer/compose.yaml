@@ -1,0 +1,17 @@
+networks:
+  backbone:
+    external: true
+    name: backbone
+services:
+  embedder:
+    image: jfof-docker.artifactrepo.jnj.com/orb-gen-write:predev
+    restart: no
+    networks:
+      - backbone
+    command: ["python3", "main.py"]
+    volumes:
+      - ./config.yaml:/etc/orb-generation/config.yaml
+      - ./shared:/shared
+    environment:
+      llm_key: "c5de161b2f154a7d914fe25792b6ba0c"
+      emb_key: "a4a8512bc0944b608ddcc40c5e254461"

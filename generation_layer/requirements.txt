@@ -1,0 +1,13 @@
+langchain-openai==0.3.17
+langchain-core==0.3.60
+loguru==0.7.3
+valkey==6.1.0
+aiohttp==3.11.18
+tiktoken==0.9.0
+PyYAML==6.0.2
+aiofiles==24.1.0
+pypandoc-binary==1.15
+langgraph==0.4.7
+fastapi==0.115.12
+uvicorn==0.34.3
+rapidfuzz==3.13.0
