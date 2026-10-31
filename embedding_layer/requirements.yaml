@@ -1,0 +1,15 @@
+langchain-openai==0.3.17
+langchain-core==0.3.60
+fastembed==0.6.1
+loguru==0.7.3
+valkey==6.1.0
+unstructured[pdf,local-inference]==0.17.2
+qdrant-client==1.14.2
+aiohttp==3.11.18
+tiktoken==0.9.0
+tqdm==4.67.1
+PyYAML==6.0.2
+aiofiles==24.1.0
+langchain-unstructured==0.1.6
+unstructured-inference==1.0.5
+```[cite: 80]

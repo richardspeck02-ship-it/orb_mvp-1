@@ -1,0 +1,34 @@
+networks:
+  backbone:
+    external: true
+    name: backbone
+services:
+  init-streams:
+    image: jfof-docker.artifactrepo.jnj.com/orb-generation:latest
+    restart: no
+    networks:
+      - backbone
+    command: ["python3", "./init.py"]
+    volumes:
+      - ./config.yaml:/etc/orb-generation/config.yaml
+      - ./cache:/model_cache
+      - ./shared:/shared
+    environment:
+      llm_key: "foobar"
+      emb_key: "foobar"
+  embedder:
+    image: jfof-docker.artifactrepo.jnj.com/orb-generation:latest
+    restart: no
+    networks:
+      - backbone
+    command: ["python3", "./embedding_layer/main.py"]
+    volumes:
+      - ./config.yaml:/etc/orb-generation/config.yaml
+      - ./cache:/model_cache
+      - ./shared:/shared
+      - ./docling_cache:/root/.cache
+    environment:
+      llm_key: "foobar"
+      emb_key: "foobar"
+    depends_on:
+      - init-streams

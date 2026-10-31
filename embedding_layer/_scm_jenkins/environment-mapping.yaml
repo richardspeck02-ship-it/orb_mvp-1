@@ -1,0 +1,8 @@
+branchNamePattern: ^(feature|bugfix|hotfix)/.**
+environment: 'PREDEV'
+branchNamePattern: (development | develop dev).**
+environment: 'DEV'
+branchNamePattern: (staging|QA|qa|release).**
+environment: 'QA'
+branchNamePattern: ^(master main).**
+environment: 'PROD'
