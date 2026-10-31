@@ -1,0 +1,10 @@
+FastAPI==0.115.12
+uvicorn==0.34.2
+langchain-core==0.3.62
+langchain-openai==0.3.18
+qdrant-client==1.14.2
+loguru==0.7.3
+fastembed==0.7.0
+transformers==4.52.4
+aiohttp==3.12.6
+tiktoken==0.9.0

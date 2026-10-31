@@ -1,0 +1,8 @@
+#!/bin/groovy
+@Library("jpm_shared_lib@1.x") _                   // imports the latest stable version of JPM[cite: 67]
+import org.jnj.*[cite: 67]
+def args = [:][cite: 67]
+args.debug = true                                 // set to true for verbose logs[cite: 67]
+args.manifestSourcesFile = 'retrieval_layer/_scm_jenkins/manifest-sources.yaml'[cite: 67]
+args.environmentMappingFile = 'retrieval_layer/_scm_jenkins/environment-mapping.yaml'[cite: 67]
+new pipelines.stdPipeline().execute(args)         // invoke the JPM Standard Pipeline[cite: 67]
