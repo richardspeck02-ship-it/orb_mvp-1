@@ -1,0 +1,97 @@
+{{- if .Values.embeddingLayer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-embedding-layer
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+    module: embedding-layer
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "orb-generation.selectorLabels" . | nindent 4 }}
+    module: embedding-layer
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-ui
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+    module: ui
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "orb-generation.selectorLabels" . | nindent 4 }}
+    module: ui
+---
+{{- if .Values.preprocessingLayer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-preprocessing-layer
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+    module: preprocessing-layer
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "orb-generation.selectorLabels" . | nindent 4 }}
+    module: preprocessing-layer
+{{- end }}
+---
+{{- if .Values.retrievalLayer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-retrieval-layer
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+    module: retrieval-layer
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "orb-generation.selectorLabels" . | nindent 4 }}
+    module: retrieval-layer
+{{- end }}
+---
+{{- if .Values.generationLayer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-generation-layer
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+    module: generation-layer
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "orb-generation.selectorLabels" . | nindent 4 }}
+    module: generation-layer
+{{- end }}

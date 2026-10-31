@@ -1,0 +1,12 @@
+- service: eat-jenkins
+  teamKey: jfof
+  jenkinsType: dev
+  environment: Production
+  triggerFrom:
+    - eventType: commit # pull_request (includes pull_request_open, pull_request_updated, pull_request_reopen), commit (post_repository_hook)
+      branches:
+        - feature/*
+        - bugfix/*
+        - hotfix/*
+        - develop
+        - main

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configName }}
+  namespace: {{ include "orb-generation.namespace" . }}
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  config.yaml: |
+    {{ .Values.config | toYaml | nindent 4 }}

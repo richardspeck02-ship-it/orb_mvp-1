@@ -1,0 +1,298 @@
+# Maximum number of tokens a chunk should contain.
+# Chunks containing lesser tokens are discarded.
+minChunkTokens: 75
+
+# Background and context about the application whose ORB will be written.
+appContext: >
+  Foobar
+## Redis configurations.
+## Redis is used for version control of documents and as the message queue.
+redis:
+  # (Optional)
+  # Common prefix added to all redis keys to segregate between environments
+  # when using a shared redis.
+  # Default: local
+  envPrefix: foobar
+  host: awsdrjnva10003.jnj.com
+  port: 6379
+  # (Optional)
+  # Number of times a failed embedding is retried before its logged to the dead letter queue.
+  embedRetries: 3
+  # Name of the dead letter queue to use.
+  dlQueueName: dead-letter-queue
+  # Name of the stream where the publisher in the preprocessing layer sends messages to/consumers in embedding layer reads messages from.
+  embedQueueName: embed-queue
+  # Name of the group the multiple consumers of the embedding layer will be added to.
+  embedConsumerGroupName: embedders
+  # Name of the stream where the publisher in the embedding layer sends messages to/consumers in generation layer reads messages from.
+  generatorQueueName: generate-queue
+  # Name of the group the multiple consumers of the generator layer will be added to.
+  generatorConsumerGroupName: generators
+  # (Optional)
+  # Name of the consumer instance. Must be unique for every replica.
+  # Defaults to embed_consumer_{socket.gethostname()}.
+  workerName: test-worker
+  # Number of messages each consumer reads at a time.
+  batchSize: 1
+  # (Optional)
+  # Duration in milliseconds for which the stream is polled for 'batchSize' messages.
+  # Defaults to 5000.
+  pollTimeMs: 5000
+  ## Configurations for the message reclaimer service.
+  reclaim:
+    # Maximum number of pending messages to distribute.
+    maxMessages: 3
+    # Duration in milliseconds for a pending message after which, it qualifies for distribution.
+    idleThresholdMs: 600000
+
+# (Optional) Maximum concurrent tasks allowed to run at one go.
+# Defaults to 128.
+maxConcurrency: 128
+# Time to wait before an embedding task for a document is considered dead and the lock is released.
+lockClearTimeoutSeconds: 10
+llmModel:
+  # (Optional)
+  # Maximum time to wait for the LLM to respond before backing off.
+  # Default: 30
+  generationTimeout: 45
+  # (Optional)
+  # When LLM calls timeout, number of times we retry getting a response.
+  # Default: 3
+  timeoutRetries: 3
+  defaultModel: gpt-4o
+  # (Optional)
+  # Model used to transcribe images. (Must be a multimodal model!)
+  # Default: defaultModel
+  imageDescriptorModel: gpt-4o
+  # (Optional)
+  # Model used to perform query planning and reviews.
+  # Default: defaultModel
+  metaModel: gpt-4o
+  # (Optional)
+  # Model used to write the ORB.
+  # Default: defaultModel
+  writerModel: gpt-4o
+  defaultTemperature: 0.3
+  apiVersion: "2024-12-01-preview" # o3-mini only available from this version onwards.
+  baseUrl: https://genaiapimna.jnj.com/openai-chat
+  apiType: azure
+  apiKey: llm_key
+  # (Optional)
+  # When the LLM fails to follow a structured output, number of times we retry.
+  # Default: 3
+  structuredOutputRetries: 3
+  inputCost: 0.00000250
+  outputCost: 0.00001000
+  allowedModels:
+    - o3-mini
+    - gpt-4o
+    - gpt-4o-mini
+    - gpt-4o-global
+    - gpt-4o-mini-global
+    - gpt-4-turbo
+    - gpt-4-32k
+    - gpt-4
+    - gpt-35-turbo-16k
+    - gpt-35-turbo
+
+embeddingModels:
+  apiVersion: "2024-02-15-preview"
+  defaultModel: "text-embedding-3-large"
+  endpoint: "https://genaiapimna.jnj.com/openai-embeddings"
+  sparseModel: Qdrant/bm42-all-minilm-l6-v2-attentions
+  lateInteractionModel: "answerdotai/answerai-colbert-small-v1"
+  lateInteractionDimensions: 96
+  useTFIDF: true
+  apiKey: emb_key
+  visionModel: ViT-L-14
+  visionModelCheckpoint: openai
+  visionModelDimensions: 768
+
+# Configurations for the retrieval API.
+retrieval:
+  # (Optional)
+  # Maximum response size in KB beyond which, responses are compressed.
+  # Default: 128
+  compressionThreshold: 150
+  # Multiplier to use when fetching candidate vectors before fusion and reranking.
+  scaleFactor: 5
+  # Top most relevant candidate vectors to return
+  # Can be set in API calls.
+  topK: 25
+  # (Optional)
+  # Verify SSL when calling the reranking endpoint.
+  # Default: true
+  verifySSL: false
+  # URL for the server hosting the reranker model.
+  rerankEndpoint: http://awsdrjnva10004.jnj.com:80/rerank
+  # Max tokens allowed in the reranker model.
+  maxTokens: 1024
+  # Tokens reserved for questions.
+  reservedTokens: 100
+  # (Optional)
+  # Number of tokens to put in a rolling window when searching for most relevant chunks during trimming.
+  trimWindowSize: 300
+
+  rerankModel: jinaai/jina-reranker-v2-base-multilingual
+  rerankModelCache: /models/embedding-models/rerank-model
+
+qdrant:
+  collection: orb-gen
+  url: https://qdrant.grpc.aiorbgen.apps.jnj.com
+  port: 443
+  # apiKey: qdrant_token
+  preferGRPC: true
+  overwrite: true
+  existOk: true
+
+# Configurations for the generation layer.
+generation:
+  # Maximum wait time between retries when retrieval API fails or rate-limits.
+  maxRetrySeconds: 20
+  # Number of times to retry when retrieval API fails or rate-limits.
+  queryRetries: 10
+  # (Optional)
+  # Number of times a section is reviewed by the writer's internal reviewer post generation.
+  # Default: 1
+  reviews: 0
+  # Path where generated ORBs are saved.
+  outputPath: /shared/Generated-Transcend-IR-ORB
+  # URL for the reranking endpoint of the retrieval API.
+  rerankEndpoint: http://orb-generation-predev-retrieval-layer.orb-gen-predev.svc.cluster.local:80/rerank
+  queryEndpoint: http://orb-generation-predev-retrieval-layer.orb-gen-predev.svc.cluster.local:80/query/stream
+  pointsEndpoint: http://orb-generation-predev-retrieval-layer.orb-gen-predev.svc.cluster.local:80/query/id
+  healthCheckEndpoint: http://orb-generation-predev-retrieval-layer.orb-gen-predev.svc.cluster.local:80/healthz
+  # (Optional)
+  # Verify SSL when calling the retrieval API.
+  # Default: true
+  verifySSL: false
+
+# Storage configurations (refactor to storage later)
+s3:
+  # Path where shared data is stored.
+  sharedPath: /shared
+  # Path where input data got stored.
+  inputPath: /input
+  tempPath: /temp/orb-artifacts
+  rootDirectory: ORB Inputs
+  rootDirectoryOutput: ORB Artifacts
+
+uvicorn:
+  host: "0.0.0.0"
+  port: 80
+
+name: Realistic Preview and Description
+description: >
+  This section provides a comprehensive overview of the application. It outlines its purpose, architecture, material assets, and its role within the broader ecosystem. Appliance map and C&I diagrams, tables, or bullet lists when applicable.
+position: 1
+subsections:
+  - name: Application Information
+    description: >
+      Provide detailed information regarding the application such as the name, ID, short description, purpose, and whether it is for internal or external use. This subsection should include submission details and key highlights about the application's functionality.
+    position: 1
+  - name: Application Contact Information
+    description: >
+      List all relevant contacts including project managers, lead developers, technical contacts, and vendor contacts. For each contact, include name, email address, phone number, and role. Use a table for clarity.
+    position: 2
+  - name: System Architecture and Design
+    description: >
+      Describe the overall architecture of the application including diagrams or flowcharts that represent the system components and data flows. Use bullet points to highlight major components.
+    position: 3
+  - name: Hardware Components
+    description: >
+      Provide a detailed inventory of hardware assets such as servers, including their purpose, location, spec specs, IP addresses, and status (primary/backup). Use a table format for better readability.
+    position: 4
+  - name: Software Components
+    description: >
+      List the software stack (e.g., OS, runtimes, services) along with their names, version numbers, license types, and vendor details. A table is preferable here.
+    position: 5
+  - name: Operating System
+    description: >
+      Detail the operating system(s) in use (e.g., Linux distributions), including version information and any specific configuration relevant to the application.
+    position: 6
+  - name: Database
+    description: >
+      List the databases features with details on database type, version, host location, and purpose. Use a table to clearly present this database.
+    position: 7
+  - name: Client Tools
+    description: >
+      List the client-side tools used for accessing or managing the system. Include version numbers and client details if applicable.
+    position: 8
+  - name: Source Libraries
+    description: >
+      Describe the code repositories or libraries used by the application, include language versions, repository paths, and information on whether the code is vendor-supplied.
+    position: 9
+  - name: Network Information
+    description: >
+      Outline the network components and configurations associated with the application. Include network diagrams, IP configurations, and any relevant network policies.
+    position: 10
+  - name: Security Information
+    description: >
+      Provide details on security configurations and policies. This may include access controls, encryption standards, and any compliance-related information. Ensure sensitive info is handled appropriately.
+    position: 11
+  - name: Upstream Dependent Applications
+    description: >
+      List any applications or systems that supply data or services to this application. For each, include the application name, ID, description, and contact information for the technical owner.
+    position: 12
+  - name: Downstream Dependent Applications
+    description: >
+      (Repeat for Downstream applications)
+    position: 13
+  - name: Additional Features or Dependencies
+    description: >
+      Note any extra features, integrations, or dependencies that do not easily fit into the above categories. Provide a brief description and any relevant technical details.
+    position: 14
+  - name: Points of Failure
+    description: >
+      Identify and document critical components whose failure could disrupt normal operations. For each point of failure, include a description of the risk and any mitigating recommendations.
+    position: 15
+
+name: Procedural, Support and Guarantee Information
+description: >
+  This section outlines the operational procedures for regular tasks, support structure, and escalation processes during incidents. It should contain guidelines for service level agreements, operating hours, support contacts, and standard procedures for troubleshooting and emergency testing.
+position: 2
+subsections:
+  - name: Service Level Agreement
+    description: >
+      Define the service levels (e.g., SLA, OLA) expected for the application. Include description of each level and implications for missing target, using tables or bullet points.
+    position: 1
+  - name: Hours of Operation
+    description: >
+      Clearly state the operational hours for the application. Specify the regional time zones, working hours, and any special conditions (e.g., 24 x 7 service) using a straightforward list or table.
+    position: 2
+  - name: Support Group Tier
+    description: >
+      List the groups responsible for supporting the application (Support Levels Tier 1, L2, L3) along with the corresponding contact names and details. Presented as a table for clarity.
+    position: 3
+  - name: Escalation Information
+    description: >
+      Outline the escalation paths for incident management. Include primary, secondary, and tertiary contacts with names, email addresses, and phone numbers. Use a table or bullet list to make it easy to follow during emergencies.
+    position: 4
+  - name: Impacted User Community
+    description: >
+      Define the user groups affected by the application's performance or outages. Mention contact details and key communication protocols specific to this community.
+    position: 5
+  - name: Communications & Maintenance Protocol
+    description: >
+      Describe the methods and templates for communication during incidents or maintenance. Include sample email templates, notification processes, and escalation protocols in a clear step-by-step format.
+    position: 6
+  - name: Operations Procedures
+    description: >
+      List standard tasks required to maintain the application environment. Include task frequency (daily, weekly, monthly), detailed instructions, and targets where applicable. Use a table or ordered list for organization.
+    position: 7
+  - name: Start Up/Shutdown Procedures
+    description: >
+      Document the exact sequences for starting up or shutting down the application. Provide sequential steps, key dependencies, and verification checks. A detailed list is upload for clarity.
+    position: 8
+  - name: Troubleshooting
+    description: >
+      Describe the troubleshooting steps to follow during issues or emergencies. Include integration for diagnostic steps, recovery procedures, and rollback actions. Use a bullet list or flowchart to guide users through the process.
+    position: 9
+  - name: Release Schedule and Maintenance Window
+    description: >
+      This section explains the scheduling for releases and planned maintenance windows. Include details on notification protocols, affected services, outage windows, and any mitigating actions. Use tables and timelines to clearly communicate the schedule.
+    position: 10
+  - name: Revision History
+    description: >
+      Maintain a chronological record of changes made to the runbook. List revision numbers, dates, authors, and a summary of changes. A table format is recommended to view key trending of updates over time.
+    position: 11

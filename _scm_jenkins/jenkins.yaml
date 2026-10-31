@@ -1,0 +1,153 @@
+- url: https://jenkins.eat.jnj.com/jfof-dev
+  createJobsFrom
+    - feature/JFOF-*-embedding-layer
+    - feature/JFOF-*-common-
+    - bugfix/JFOF-*-embedding-layer
+    - feature/.*embedding-layer
+    - bugfix/.*embedding-layer
+    - feature/.*-common-
+    - develo
+    - mai
+  createJobsIgnoreAuthors
+    - SA-.
+  triggerJobsFrom
+    - feature/JFOF-*-embedding-layer
+    - feature/JFOF-*-common-
+    - bugfix/JFOF-*-embedding-layer
+    - feature/.*embedding-layer
+    - bugfix/.*embedding-layer
+    - feature/.*-common-
+    - develo
+    - mai
+  triggerJobsIgnoreAuthors
+    - SA-.
+  jobs
+    - jobStyle: multi-branch-pipelin
+      jobName: AI/ORB-Generation/Embedding-Laye
+      jobCredentials: sourcecode-bitbucke
+      includeBranches
+        - feature/JFOF-*-embedding-layer
+        - feature/JFOF-*-common-
+        - bugfix/JFOF-*-embedding-layer
+        - feature/.*embedding-layer
+        - bugfix/.*embedding-layer
+        - feature/.*-common-
+        - develo
+        - mai
+      buildsToKeep: 
+      buildsToKeepDays: 
+      jobScriptPath: embedding_layer/_scm_jenkins/Jenkinsfil
+  createJobsFrom
+    - feature/JFOF-*-preprocessing-layer
+    - feature/JFOF-*-common-
+    - bugfix/JFOF-*-preprocessing-layer
+    - feature/.*preprocessing-layer
+    - bugfix/.*preprocessing-layer
+    - feature/.*-common-
+    - develo
+    - mai
+  createJobsIgnoreAuthors
+    - SA-.
+  triggerJobsFrom
+    - feature/JFOF-*-preprocessing-layer
+    - feature/JFOF-*-common-
+    - bugfix/JFOF-*-preprocessing-layer
+    - feature/.*preprocessing-layer
+    - feature/.*-common-
+    - bugfix/.*preprocessing-layer
+    - develo
+    - mai
+  triggerJobsIgnoreAuthors
+    - SA-.
+  jobs:
+    - jobStyle: multi-branch-pipeline
+      jobName: AI/ORB-Generation/Preprocessing-Layer
+      jobCredentials: sourcecode-bitbucket
+      includeBranches:
+        - feature/JFOF-*-preprocessing-layer*
+        - bugfix/JFOF-*-preprocessing-layer*
+        - feature/JFOF-*-common-*
+        - feature/.*preprocessing-layer*
+        - bugfix/.*preprocessing-layer*
+        - feature/.*-common-*
+        - develop
+        - main
+      buildsToKeep: 5
+      buildsToKeepDays: 5
+      jobScriptPath: preprocessing_layer/_scm_jenkins/Jenkinsfile
+  createJobsFrom:
+    - feature/JFOF-*-retrieval-layer*
+    - feature/JFOF-*-common-*
+    - bugfix/JFOF-*-retrieval-layer*
+    - feature/.*retrieval-layer*
+    - bugfix/.*retrieval-layer*
+    - feature/.*-common-*
+    - develop
+    - main
+  createJobsIgnoreAuthors:
+    - SA-.*
+  triggerJobsFrom:
+    - feature/JFOF-*-retrieval-layer*
+    - feature/JFOF-*-common-*
+    - bugfix/JFOF-*-retrieval-layer*
+    - feature/.*retrieval-layer*
+    - feature/.*-common-*
+    - bugfix/.*retrieval-layer*
+    - develop
+    - main
+  triggerJobsIgnoreAuthors:
+    - SA-.*
+  jobs:
+    - jobStyle: multi-branch-pipeline
+      jobName: AI/ORB-Generation/Retrieval-Layer
+      jobCredentials: sourcecode-bitbucket
+      includeBranches:
+        - feature/JFOF-*-retrieval-layer*
+        - bugfix/JFOF-*-retrieval-layer*
+        - feature/JFOF-*-common-*
+        - feature/.*retrieval-layer*
+        - bugfix/.*retrieval-layer*
+        - feature/.*-common-*
+        - develop
+        - main
+      buildsToKeep: 5
+      buildsToKeepDays: 5
+      jobScriptPath: retrieval_layer/_scm_jenkins/Jenkinsfile
+  createJobsFrom:
+    - feature/JFOF-*-retrieval-layer*
+    - feature/JFOF-*-common-*
+    - bugfix/JFOF-*-retrieval-layer*
+    - feature/.*retrieval-layer*
+    - bugfix/.*retrieval-layer*
+    - feature/.*-common-*
+    - develop
+    - main
+  createJobsIgnoreAuthors:
+    - SA-.*
+  triggerJobsFrom:
+    - feature/JFOF-*-generation-layer*
+    - feature/JFOF-*-common-*
+    - bugfix/JFOF-*-generation-layer*
+    - feature/.*generation-layer*
+    - feature/.*-common-*
+    - bugfix/.*generation-layer*
+    - develop
+    - main
+  triggerJobsIgnoreAuthors:
+    - SA-.*
+  jobs:
+    - jobStyle: multi-branch-pipeline
+      jobName: AI/ORB-Generation/Generation-Layer
+      jobCredentials: sourcecode-bitbucket
+      includeBranches:
+        - feature/JFOF-*-generation-layer*
+        - bugfix/JFOF-*-generation-layer*
+        - feature/JFOF-*-common-*
+        - feature/.*generation-layer*
+        - bugfix/.*generation-layer*
+        - feature/.*-common-*
+        - develop
+        - main
+      buildsToKeep: 5
+      buildsToKeepDays: 5
+      jobScriptPath: generation_layer/_scm_jenkins/Jenkinsfile

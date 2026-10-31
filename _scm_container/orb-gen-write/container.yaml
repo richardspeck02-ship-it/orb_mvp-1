@@ -1,0 +1,35 @@
+name: orb-gen-write
+tagStrategies:
+  predev:
+    branches:
+      - feature/*
+      - hotfix/*
+      - bugfix/*
+    tags:
+      - predev
+      - latest
+      - ${Major}.${Mino}-alpha.${CommitsSinceVersionSource}.${PreReleaseLabel}
+  dev:
+    branches:
+      - develop
+    tags:
+      - stable
+      - ${Major}.${Mino}-rc-${CommitsSinceVersionSource}.${PreReleaseLabel}
+  # qa:
+  #   branches:
+  #     - qa
+  #   tags:
+  #     - qa
+  release:
+    branches:
+      - main
+    tags:
+      - stable-${Major}.${Minor}.${Patch}
+      - ${Major}.${Minor}.${Patch}
+build: true
+useDockerCache: true
+artifactoryRepository: jfof-docker
+changedContainersOnly: true
+watchChangesInPaths:
+  - generation_layer/.*
+  - _scm_container/orb-gen-write/.*

@@ -1,0 +1,131 @@
+{{- if .Values.embeddingLayer.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-embedding-layer
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "orb-generation.fullname" . }}-embedding-layer
+  minReplicas: {{ .Values.embeddingLayer.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.embeddingLayer.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.embeddingLayer.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.embeddingLayer.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.embeddingLayer.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.embeddingLayer.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+---
+{{- if .Values.preprocessingLayer.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-preprocessing-layer
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "orb-generation.fullname" . }}-preprocessing-layer
+  minReplicas: {{ .Values.preprocessingLayer.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.preprocessingLayer.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.preprocessingLayer.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.preprocessingLayer.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.preprocessingLayer.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.preprocessingLayer.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+---
+{{- if .Values.retrievalLayer.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-retrieval-layer
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "orb-generation.fullname" . }}-retrieval-layer
+  minReplicas: {{ .Values.retrievalLayer.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.retrievalLayer.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.retrievalLayer.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.retrievalLayer.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.retrievalLayer.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.retrievalLayer.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+---
+{{- if .Values.generationLayer.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-generation-layer
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "orb-generation.fullname" . }}-generation-layer
+  minReplicas: {{ .Values.generationLayer.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.generationLayer.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.generationLayer.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.generationLayer.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.generationLayer.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.generationLayer.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

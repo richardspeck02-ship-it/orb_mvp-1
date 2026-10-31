@@ -1,0 +1,78 @@
+---
+{{- if .Values.embeddingLayer.enabled }}
+{{- if .Values.embeddingLayer.podDisruptionBudget }}
+apiVersion: {{ include "orb-generation.podDisruptionBudget.apiVersion" . }}
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-embedding-layer
+  namespace: {{ include "orb-generation.namespace" . }}
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+    {{- with .Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- with .Values.embeddingLayer.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ . }}
+  {{- end }}
+  {{- with .Values.embeddingLayer.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "orb-generation.selectorLabels" . | nindent 6 }}
+      module: embedding-layer
+{{- end }}
+{{- end }}
+---
+{{- if .Values.preprocessingLayer.enabled }}
+{{- if .Values.preprocessingLayer.podDisruptionBudget }}
+apiVersion: {{ include "orb-generation.podDisruptionBudget.apiVersion" . }}
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-preprocessing-layer
+  namespace: {{ include "orb-generation.namespace" . }}
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+    {{- with .Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- with .Values.preprocessingLayer.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ . }}
+  {{- end }}
+  {{- with .Values.preprocessingLayer.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "orb-generation.selectorLabels" . | nindent 6 }}
+      module: preprocessing-layer
+{{- end }}
+{{- end }}
+---
+{{- if .Values.retrievallayer.enabled }}
+{{- if .Values.retrievallayer.podDisruptionBudget }}
+apiVersion: {{ include "orb-generation.podDisruptionBudget.apiVersion" . }}
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-generation-layer
+  namespace: {{ include "orb-generation.namespace" . }}
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+    {{- with .Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- with .Values.generationLayer.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ . }}
+  {{- end }}
+  {{- with .Values.generationLayer.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "orb-generation.selectorLabels" . | nindent 6 }}
+      module: generation-layer
+{{- end }}
+{{- end }}

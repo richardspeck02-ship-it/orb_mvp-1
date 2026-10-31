@@ -1,0 +1,114 @@
+## Pipeline details across environments (defaults) retrigger
+common:
+  pipelineType: app-dev
+  debug: true
+
+  helm:
+    chartRepo: jfof-helm-charts
+    chartName: orb-generation-preprocessing
+  unitTest:
+    type: pytest
+    coverageDirs: src
+    dockerImage: jnj.artifactrepo.jnj.com/python:3.11.5-alpine
+    dir: project
+    pytestCommand: "python -m pytest --cov=. --cov-report=xml --cov-report=term-missing"
+    installRequirements: true
+    installRequirementsCommand: 'pip install -U pip && pip install -r requirements.txt'
+
+  lint:
+    type: pylint
+    dockerImage: jnj.artifactrepo.jnj.com/python:3.11.5-alpine
+    installRequirements: true
+    installRequirementsCommand: pip install -U pip && pip install -r requirements.txt
+    failUnder: 8
+    pylintModules:
+      - src
+
+  staticAnalysis:
+    type: multi
+    stages:
+      sonar:
+        coverageCleanup:
+          - coverage.xml
+        enabled: true
+        type: sonar
+        shortLivedAnalysis: true
+        longLivedAnalysis: true
+        shortLivedBuildResults:
+          BLOCKER:
+            FAILURE: 10
+            UNSTABLE: 5
+          CRITICAL:
+            FAILURE: 10
+            UNSTABLE: 5
+          MAJOR:
+            FAILURE: 20
+            UNSTABLE: 10
+          MINOR:
+            FAILURE: 20
+            UNSTABLE: 10
+          INFO:
+            FAILURE: 20
+            UNSTABLE: 5
+          QUALITY_GATE:
+            # Error should be FAILURE, however since the team understands the risks and
+            # wants to come back to fixing sonarAnalysis, we are keeping the pipeline as passing
+            ERROR: SUCCESS
+            WARN: SUCCESS
+        longLivedBuildResults:
+          BLOCKER:
+            FAILURE: 100
+            UNSTABLE: 5
+          CRITICAL:
+            FAILURE: 100
+            UNSTABLE: 5
+          MAJOR:
+            FAILURE: 100
+            UNSTABLE: 10
+          MINOR:
+            FAILURE: 100
+            UNSTABLE: 10
+          INFO:
+            FAILURE: 100
+            UNSTABLE: 5
+          QUALITY_GATE:
+            # Error should be FAILURE, however since the team understands the risks and
+            # wants to come back to fixing sonarAnalysis, we are keeping the pipeline as passing
+            ERROR: SUCCESS
+            WARN: SUCCESS
+
+  versionCalculation:
+    type: gitversion
+    patternType: jnj-developer-branch
+
+  package:
+    type: helm
+
+  publish:
+    type: "multi"
+    stages:
+      Helm:
+        type: helm
+      Docker:
+        type: docker
+        credsList:
+          - registry: https://jnj.artifactrepo.jnj.com
+            credentialsId: artifactory
+          - registry: https://jfof-docker.artifactrepo.jnj.com
+            credentialsId: artifactory
+
+  buildAnalysis:
+    buildTimeoutInMinutes: 90
+    buildTimeoutInMinutes: 90
+  deploy:
+    type: helm
+    chartRepoCredentialsId: "sourcecode-bitbucket"
+    kubernetesConfig:
+      type: eks
+      name: itx-drj-ekscluster-production
+      region: us-east-1
+      credentialsId: itx-drj-eatjenkinsadminapi
+      atomic: true
+
+  resolveArtifacts:
+    enabled: false

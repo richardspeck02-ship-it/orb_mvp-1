@@ -1,0 +1,118 @@
+{{- if .Values.generationLayer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "orb-generation.fullname" . }}-generation-layer
+  labels:
+    {{- include "orb-generation.labels" . | nindent 4 }}
+    module: generation-layer
+spec:
+  {{- if not .Values.generationLayer.autoscaling.enabled }}
+  replicas: {{ .Values.generationLayer.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "orb-generation.selectorLabels" . | nindent 4 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "orb-generation.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        module: generation-layer
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "orb-generation.serviceAccountName" . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          command:
+            - python3
+            - ./main.py
+          env:
+            - name: CPU_LIMIT
+              value: "{{ .Values.generationLayer.resources.limits.cpu | default 2 }}"
+            - name: DOCLING_ARTIFACTS_PATH
+              value: "/docling_models"
+          envFrom:
+            - secretRef:
+                name: {{ .Values.appSecretsName }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.generationLayer.image.repository }}:{{ .Values.generationLayer.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.generationLayer.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.generationLayer.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.generationLayer.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.generationLayer.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/orb-generation
+            - name: shared-volume
+              mountPath: /shared
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Values.configName }}
+        - name: shared-volume
+          persistentVolumeClaim:
+            claimName: {{ default (include "orb-generation.fullname" $) .Values.s3Mount.sharedClaimName }}
+      {{- with .Values.volumes }}
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        {{- if .Values.generationLayer.strictAntiAffinity }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app.kubernetes.io/name"
+                    operator: In
+                    values:
+                      - {{ include "orb-generation.name" . }}-generation-layer
+              topologyKey: "kubernetes.io/hostname"
+        {{- else }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: "app.kubernetes.io/name"
+                      operator: In
+                      values:
+                        - {{ include "orb-generation.name" . }}-generation-layer
+                topologyKey: "kubernetes.io/hostname"
+        {{- end }}
+        {{- with .Values.generationLayer.affinity }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.generationLayer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

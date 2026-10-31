@@ -1,0 +1,606 @@
+imagePullSecrets:
+  - name: jfof-artifactory
+  - name: jnj-artifactory
+nameOverride: "orb-generation-predev"
+fullnameOverride: "orb-generation-predev"
+
+serviceAccount:
+  create: false
+
+reclaimer:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: sectigo
+  hosts:
+    - host: predev.preprocess.aiorbgen.apps.jnj.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+          module: preprocessing-layer
+    - host: predev.retrieval.aiorbgen.apps.jnj.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+          module: retrieval-layer
+    - host: predev.generate.aiorbgen.apps.jnj.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+          module: generation-layer
+    - host: predev.aiorbgen.apps.jnj.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+          module: ui
+
+  tls:
+    - secretName: orbgen-predev-ingress-tls
+      hosts:
+        - predev.preprocess.aiorbgen.apps.jnj.com
+        - predev.retrieval.aiorbgen.apps.jnj.com
+        - predev.generate.aiorbgen.apps.jnj.com
+        - predev.aiorbgen.apps.jnj.com
+
+s3Mount:
+  sharedBucketName: "demo-runbook"
+  sharedVolumeHandle: shared-handle-predev
+  sharedVolumeName: shared-vol-predev
+  sharedClaimName: shared-claim-predev
+  inputBucketName: "orb-generation-pilot-transcend-im"
+  inputVolumeHandle: input-handle-predev
+  inputVolumeName: input-vol-predev
+  inputClaimName: input-claim-predev
+  mountOptions:
+    - allow-delete
+    - region us-east-1
+    - aws-max-attempts 5
+
+preprocessingLayer:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: jfof-docker.artifactrepo.jnj.com/orb-generation-preprocessing
+    pullPolicy: IfNotPresent
+    tag: "predev"
+  resources:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 1
+      memory: 4Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: "module"
+                operator: In
+                values:
+                  - embedding-layer
+          topologyKey: "kubernetes.io/hostname"
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                  - us-east-1a
+                  - us-east-1b
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    maxUnavailable: 1
+
+embeddingLayer:
+  doclingCache: /models/docling-models
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: jfof-docker.artifactrepo.jnj.com/orb-gen-embed
+    pullPolicy: Always
+    tag: predev
+  resources:
+    limits:
+      cpu: 8
+      memory: 12Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  tolerations:
+    - key: "services"
+      operator: "Equal"
+      value: "dedicated"
+      effect: "NoSchedule"
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: "module"
+                operator: In
+                values:
+                  - preprocessing-layer
+                  - embedding-layer
+              - key: "app"
+                operator: In
+                values:
+                  - qdrant
+          topologyKey: "kubernetes.io/hostname"
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: "worker-group"
+                operator: In
+                values:
+                  - services
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                  - us-east-1a
+                  - us-east-1b
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    maxUnavailable: 1
+  livenessProbe:
+    failureThreshold: 20
+    periodSeconds: 20
+    terminationGracePeriodSeconds: 120
+    httpGet:
+      path: /ping
+      port: http
+  readinessProbe:
+    failureThreshold: 20
+    periodSeconds: 20
+    httpGet:
+      path: /ping
+      port: http
+
+retrievalLayer:
+  enabled: true
+  image:
+    repository: jfof-docker.artifactrepo.jnj.com/orb-gen-retrieval
+    pullPolicy: Always
+    tag: predev
+  resources:
+    limits:
+      cpu: 4
+      memory: 4Gi
+    requests:
+      cpu: 1.5
+      memory: 1Gi
+  tolerations:
+    - key: "services"
+      operator: "Equal"
+      value: "dedicated"
+      effect: "NoSchedule"
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: "module"
+                operator: In
+                values:
+                  - retrieval-layer
+          topologyKey: "kubernetes.io/hostname"
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                  - us-east-1a
+                  - us-east-1b
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    maxUnavailable: 1
+  readinessProbe: {}
+  livenessProbe: {}
+
+generationLayer:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: jfof-docker.artifactrepo.jnj.com/orb-gen-write
+    pullPolicy: Always
+    tag: predev
+  resources:
+    limits:
+      cpu: 4
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 512Mi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: "module"
+                operator: In
+                values:
+                  - embedding-layer
+          topologyKey: "kubernetes.io/hostname"
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                  - us-east-1a
+                  - us-east-1b
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    maxUnavailable: 1
+  livenessProbe:
+    failureThreshold: 20
+    periodSeconds: 10
+    terminationGracePeriodSeconds: 30
+    httpGet:
+      path: /healthz
+      port: http
+  readinessProbe:
+    failureThreshold: 20
+    periodSeconds: 10
+    httpGet:
+      path: /healthz
+      port: http
+
+jnjAppID: "APP000"
+
+appContext: >
+  Provide a comprehensive overview of the Transcend IM (TIME) application within Johnson & Johnson Innovative Medicine. This section serves as an orientation to the single-instance SAP S/4HANA digital core that replaces seven legacy ERPs. Outline its purpose, architecture, material assets, and role within the broader enterprise ecosystem.
+
+llmModel:
+  generationTimeout: 45
+  timeoutRetries: 3
+  defaultModel: gpt-4o
+  imageDescriptorModel: gpt-4o
+  metaModel: gpt-4o
+  writerModel: gpt-4o
+  defaultTemperature: 0.3
+  apiVersion: "2024-12-01-preview"
+  baseUrl: https://genaiapimna.jnj.com/openai-chat
+  apiType: azure
+  apiKey: llm_key
+  structuredOutputRetries: 3
+  inputCost: 0.00000250
+  outputCost: 0.00001000
+  allowedModels:
+    - o3-mini
+    - gpt-4o
+    - gpt-4o-mini
+    - gpt-4o-global
+    - gpt-4o-mini-global
+    - gpt-4-turbo
+    - gpt-4-32k
+    - gpt-4
+    - gpt-35-turbo-16k
+    - gpt-35-turbo
+
+embeddingModels:
+  apiVersion: "2024-02-15-preview"
+  defaultModel: "text-embedding-3-large"
+  endpoint: "https://genaiapimna.jnj.com/openai-embeddings"
+  sparseModel: Qdrant/bm42-all-minilm-l6-v2-attentions
+  sparseModelCache: /models/embedding-models/sparse-model
+  lateInteractionModel: "answerdotai/answerai-colbert-small-v1"
+  lateInteractionModelCache: /models/embedding-models/late-interaction-model
+  lateInteractionDimensions: 96
+  useTFIDF: true
+  apiKey: emb_key
+  visionModel: ViT-L-14
+  visionModelCheckpoint: openai
+  visionModelDimensions: 768
+
+embedding:
+  appMetadataEndpoint: http://orb-generation-predev-preprocessing-layer.orb-gen-predev.svc.cluster.local:80/getDocuments/
+  historyEndpoint: http://orb-generation-predev-generation-layer.orb-gen-predev.svc.cluster.local:80/history
+  writeEndpoint: http://orb-generation-predev-generation-layer.orb-gen-predev.svc.cluster.local:80/write
+  minChunkTokens: 32
+  annotationTimeout: 30
+  annotationRetries: 3
+
+retrieval:
+  compressionThreshold: 150
+  scaleFactor: 5
+  topK: 25
+  verifySSL: false
+  rerankEndpoint: http://awsdrjnval0004.jnj.com:80/rerank
+  maxTokens: 1024 # Max context length of cross encoder
+  reservedTokens: 100 # Tokens reserved for questions.
+  trimWindowSize: 300
+  rerankModel: jinaai/jina-reranker-v2-base-multilingual
+  rerankModelCache: /models/embedding-models/rerank-model
+
+generation:
+  maxImages: 7
+  lockClearTimeoutSeconds: 900
+  maxRetrySeconds: 20
+  queryRetries: 10
+  generationTimeout: 30
+  generationRetries: 5
+  reviews: 3
+  outputPath: /shared/Generated-Transcend-IM-ORB
+  pdfEngine: tectonic
+  rerankEndpoint: http://orb-generation-predev-retrieval-layer.orb-gen-predev.svc.cluster.local:80/rerank
+  queryEndpoint: http://orb-generation-predev-retrieval-layer.orb-gen-predev.svc.cluster.local:80/query/stream
+  pointsEndpoint: http://orb-generation-predev-retrieval-layer.orb-gen-predev.svc.cluster.local:80/query/id
+  healthCheckEndpoint: http://orb-generation-predev-retrieval-layer.orb-gen-predev.svc.cluster.local:80/healthz
+  verifySSL: false
+
+s3:
+  region: us-east-1
+  bucket: demo-runbook
+  role_arn: arn:aws:iam::453104158224:role/ORB-Pilot-EKS-S3-Role
+  sharedPath: /shared
+  inputPath: /input
+  tempPath: /temp/orb-artifacts
+  rootDirectory: ORB Inputs
+  rootDirectoryOutput: ORB Artifacts
+
+qdrant:
+  collection: orb-gen-exp
+  url: http://qdrant.qdrant.svc.cluster.local
+  port: 6334
+  # apiKey: qdrant_token
+  preferGRPC: true
+  overwrite: false
+  existOk: true
+
+uvicorn:
+  host: "0.0.0.0"
+  port: 80
+
+generateSections:
+  - name: "Transcend IM (TIME) Overview"
+    position: 1
+    subsections: []
+    description: >
+      Provide a concise but comprehensive orientation to the TIME platform-
+      Johnson & Johnson Innovative Medicine's single-instance SAP S/4HANA digital
+      core that replaces seven legacy ERPs. Summarise:
+
+      * Purpose & programme context
+        - TIME is the ERP pillar of the multi-year Transcend Supply-Chain
+          Transformation for J&J Innovative Medicine
+        - Aligns with the group-wide J&J ERP strategy and Signifi Central
+          Finance programme
+
+      * Scope highlights
+        - Process scope: Plan, Source, Make, Deliver/Logistics, Customer
+          Excellence, Finance, Master Data, Value-Chain Management
+        - System scope: Core S/4HANA modules (SD, MM, PP, EWM, TM, FI/CO, etc.)
+          plus key add-ons (MDG, ATTP, VIM, Product Compliance, aATP, etc.)
+        - Legal-entity & site footprint (JP1, JO1; global NA/EMEA/APAC/LATAM
+          manufacturing, warehousing, clinical-supply sites)
+
+      * Architecture at a glance
+        - Single-region AWS VPCX deployment; 4-tier landscape with sandbox &
+          training systems; HA/DR pattern for production
+        - TIME as central digital core inside a larger ecosystem of satellite
+          SAP SaaS and non-SAP systems; integrations via SAP BTP Integration
+          Suite, native APIs, SLT to Central Finance, and CDL for analytics
+        - "Keep-the-core-clean" template approach; side-by-side extensions on
+          J&J Transcend SAP BTP
+
+      * Key design principles
+        - Global template with localisation only for legal/compliance
+          exceptions
+        - Role-based access (GRC), SSO, SoD controls; Fiori-First UI strategy
+        - Data-tiering & archiving strategy to control HANA in-memory size
+        - Control-M for job scheduling; OpenText for document management
+
+      Frame this section as an **"executive-level overview"** (1-2 pages when
+      rendered), written so that any newcomer understands what TIME is, why it
+      exists, and its high-level boundaries before diving into detailed
+      run-book procedures.
+  - name: "SAP Business Process"
+    description: >
+      Within the Transcend IM Deliver context-where shipment orders originate in SAP S/4HANA (TIME Core ERP),
+      flow through the Application Integration layer (SAP BTP IS, MBOX, SLT), and route into SCT Logistics
+      and UPS NA-this section must document the end-to-end business process for Deliver. Include an overview
+      of how TIME creates fulfillment/shipment orders, how those orders are transmitted via MBOX/SLT to SCT
+      Logistics (pXPS Gateway), and how UPS NA is leveraged for label generation and pickup scheduling.
+      Explain the business-level goals (e.g., on-time delivery, exception management) and key stakeholders
+      (e.g., SRES, support analysts, logistics coordinators) who interact with Deliver.
+    position: 2
+    subsections:
+      - name: "Process Overview"
+        description: >
+          In the context of Deliver, summarize the automated workflow starting from TIME-originated orders:
+          how orders are created in SAP S/4HANA, ingested by SCT Logistics (via MBOX/SLT), processed by
+          PXPS Gateway, handed off to UPS NA. Highlight business rules (e.g., carrier selection logic,
+          service level agreements) and objectives (e.g., minimize transit time, optimize freight costs).
+        position: 1
+        subsections: []
+      - name: "Process Flow Diagram"
+        description: >
+          Provide a visual flowchart illustrating the Deliver process within Transcend IM. The diagram should
+          depict key systems: TIME Core ERP -> Application Integration (SAP BTP IS, MBOX, SLT) -> SCT Logistics
+          (PXPS Gateway, xTrack, RateCube-AuditCube) -> UPS NA. Clearly label each arrow with the message
+          format (e.g., IDOC/MBOX payload, API call) and show feedback loops (e.g., tracking events flowing back).
+        position: 2
+        subsections: []
+      - name: "Configuration"
+        description: >
+          Detail the SAP configuration required for Deliver within TIME. Include specifics on:
+          * Shipping condition codes and determination procedures
+          * Carrier master and carrier selection settings pointing to SCT Logistics/UPS as preferred carriers
+          * Output type configuration for IDOC or MBOX messages sent to the Application Integration layer
+          * SLA parameters configured in TIME that trigger monitoring or escalation if delivery does not occur
+            within expected thresholds
+          Explain how these settings ensure that orders flow seamlessly from TIME into the integration middleware.
+        position: 3
+        subsections: []
+      - name: "Functional Details"
+        description: >
+          Describe all functional capabilities and business logic embedded in Deliver. Within the Transcend IM
+          context, cover:
+          * How carrier and service level determination is executed based on master data in TIME
+          * Rules guiding packaging or special handling instructions (e.g., temperature-controlled shipments)
+          * Logic for splitting large orders across multiple shipments or carriers
+          * Exception scenarios (e.g., invalid address, weight discrepancies) and how the system routes those
+            exceptions (e.g., to a dead-letter queue in SCT Logistics or triggers an alert to support).
+          Be specific about which TIME fields and SCT Logistics configurations drive each functional behavior.
+        position: 4
+        subsections: []
+      - name: "Technical Details"
+        description: >
+          Document the technical underpinnings of Deliver within Transcend IM. Include:
+          * Specific IDOC types or MBOX payload schemas used to transmit shipment orders from TIME to the
+            Application Integration layer
+          * ABAP enhancements or user-exits in TIME that append custom fields (e.g., packaging codes, insurance
+            flags) into the outbound IDOC/MBOX
+          * Configuration of SAP SLT replication, if used, for real-time master data propagation (e.g., carrier
+            profiles) into the integration tier
+          * Any bespoke code or scripts (Groovy, Java) running in SAP BTP or MuleSoft that transforms payloads
+            for SCT Logistics APIs.
+          * Retry logic, error-handling routines, and how failed transmissions are logged to Central Logging.
+        position: 5
+        subsections: []
+      - name: "RICEFW"
+        description: >
+          Within the Deliver process context, catalog all RICEFW components (Reports, Interfaces, Conversions,
+          Enhancements, Forms, Workflows) that enable shipment fulfillment. Explain how each item integrates
+          with TIME and SCT Logistics/UPS. For example:
+          * **Reports:** Custom ABAP report "/ZDELVI_SHIP_STATUS" that retrieves open shipments and statuses from SCT
+          * **Interfaces:** MBOX-based interface "DELVI_MBOX_OUT" that pushes IDOC payloads to SCT Logistics PXPS
+          * **Conversions:** Data conversion job that maps TIME packaging codes to UPS service codes
+          * **Enhancements:** User-exit "EXIT_SAPLV56F" that appends custom fields to the outbound IDOC
+          * **Forms:** Adobe Smart Form used for generating shipping labels if delivered directly via TIME
+          * **Workflows:** SAP Business Workflow "WF_DELIVERY_EXCEPTION" that notifies support analysts of undeliverable items
+          Ensure each RICEFW entry specifies its ID, technical owner, and a one-sentence description of its purpose.
+        position: 6
+        subsections: []
+      - name: "RICEFW Overview"
+        description: >
+          Define the categories of RICEFW (Reports, Interfaces, Conversions, Enhancements, Forms, Workflows)
+          within the Deliver domain of Transcend IM. Explain the purpose of RICEFW for extending or customizing
+          TIME's shipment capabilities and how they interact with SCT Logistics and UPS NA.
+        position: 7
+        subsections: []
+      - name: "RICEFW Details"
+        description: >
+          Provide a detailed list of every RICEFW object used in Deliver. For each Report, Interface, Conversion,
+          Enhancement, Form, or Workflow, include:
+          * RICEFW ID (e.g., ZDELVI_RPT_001, INT_DELVI_MBOX_OUT)
+          * Object type and location (e.g., ABAP program name, MBOX config in SAP BTP, Workflow ID)
+          * Technical owner or development team
+          * Brief description of functionality (e.g., "Converts TIME's shipment order structure into SCT PXPS
+            XML schema").
+          Cover all active RICEFW items in Release 1's Deliver scope.
+        position: 8
+        subsections: []
+      - name: "IDOC"
+        description: >
+          List and explain all IDOC message types and basic types used by Deliver in Transcend IM. Include:
+          * IDOC type (e.g., ORDERS05 or custom type ZORD_DELVI)
+          * Basic type (if different from IDOC type)
+          * Partner profiles (e.g., logical system "SCT_LOGI" or "UPS_NA")
+          * Message direction (Outbound from TIME -> Inbound to Application Integration / MBOX)
+          * Segment structures and key segments (e.g., E1EDK14 for shipping instructions, E1EDP01 for item details).
+          Describe any custom segments or fields appended via ABAP enhancements. Provide examples of IDOC header
+          fields: ORDERS05-E1EDK01 and how custom fields (e.g., /ZSHIPMENTS/INS_CODE) are populated.
+        position: 9
+        subsections: []
+      - name: "Batch"
+        description: >
+          Enumerate all batch jobs or scheduled programs related to Deliver in Transcend IM. For Release 1, include:
+          * Program name or job name in SAP (e.g., ZBATCH_DELVI_STATUS_UPD, ZBATCH_RATECUBE_EXPORT)
+          * Frequency (e.g., runs every 15 minutes, nightly at 02:00)
+          * Purpose (e.g., "Polls SCT Logistics xTrack API to update TIME with current shipment statuses,"
+            "Exports RateCube cost data into EDW").
+          * Any dependencies (e.g., "Must run after master data replication job RTMCDATA_REPL").
+          Detail how these batch jobs ensure that shipments remain synchronized between TIME, SCT Logistics,
+          and downstream reporting systems.
+        position: 10
+        subsections: []
+      - name: "Process Design Documentation"
+        description: >
+          Reference all design documentation and specifications for the Deliver process in Transcend IM. Include:
+          * High-level design document link or warehouse path (e.g., SharePoint > TranscendIM > Deliver >
+            "Deliver_System_Design_v1.0.pdf")
+          * Functional specification link for Deliver (e.g., Confluence page "DELVI Functional Specs")
+          * Technical design specification (e.g., "DELVI_TECH_SPEC.docx")
+          * Data model diagrams that show key tables (e.g., /ZSHIPMENT_HDR, /ZSHIPMENT_ITEM) and how they map
+            to SCT Logistics fields
+          * Sequence diagrams illustrating payload transformations from TIME to pXPS XML.
+          State the location of each document and the version used in Release 1.
+        position: 11
+        subsections: []
+      - name: "Design Documents"
+        description: >
+          Provide the names and repository paths (e.g., Confluence, SharePoint, Git) for all high-level and
+          low-level design documents related to the Deliver process. Ensure each entry includes document title,
+          author, and last updated date.
+        position: 12
+        subsections: []
+      - name: "Functional and Technical Documents"
+        description: >
+          List all functional specification documents and technical design specifications that drive the
+          Deliver implementation in Release 1. For each, include a brief summary: For example, "Functional
+          spec DELVI_FUNC_SPEC_v1.2 describes carrier selection rules and exception scenarios."
+        position: 13
+        subsections: []
+      - name: "CR/CO Details"
+        description: >
+          Capture all Change Request (CR) or Change Order (CO) tickets that affect the Deliver process for
+          Release 1. For each CR/CO, provide ticket ID (e.g., SCT-CR-045), summary of change, and status
+          (e.g., "Completed," "In Progress"). Explain impact on existing workflows or configurations.
+        position: 14
+        subsections: []
+      - name: "Jira Story"
+        description: >
+          List all Jira stories tied to Deliver-related development or defect fixes in Release 1. For each story:
+          * Jira ID (e.g., DELVI-1023)
+          * Title (e.g., "Add temperature control flag to SCT pXPS payload")
+          * Brief description of acceptance criteria
+          * Status (e.g., "Done," "In QA").
+          Ensure traceability from each Jira story back to the functional or technical requirements.
+        position: 15
+        subsections: []
+  - name: "SAP AMS Support Contact"
+    description: >
+      In the context of Deliver for Transcend IM-where on-call SREs, support analysts, and logistics operators
+      must work together to ensure seamless order handoff, tracking, and exception resolution-provide details
+      on the Application Management Service (AMS) support structure. Cover roles, escalation paths, and contact
+      information to resolve any issues related to Deliver (e.g., IDOC failures, SCT Logistics ingestion errors,
+      UPS communication errors).
+    position: 3
+    subsections:
+      - name: "Support Structure"
+        description: >
+          Explain the support hierarchy and responsibilities for Transcend IM Deliver. Include:
+          * Tier 1: First-line support for delivery errors (e.g., invalid IDOCs, missing master data)
+          * Tier 2: Application-level support (e.g., ABAP developers, SAP BTP integration specialists)
+          * Tier 3: Vendor contacts (e.g., SCT Logistics support team, UPS API support).
+          Describe how escalation is triggered (e.g., SLA breach on shipment update, repeated MBOX failures)
+          and what communication channels are used (e.g., Slack #deliver-ops, email distribution lists).
+        position: 1
+        subsections: []
+      - name: "Contact List"
+        description: >
+          Provide a table of AMS support personnel and their contact details for Deliver-related incidents:
+          * Name, Role (e.g., "John Doe, ABAP Developer"), Team (e.g., "SAP Integration"),
+            Email, Phone, Pager (if applicable), Primary Responsibility (e.g., "Troubleshoot MBOX payload errors").
+          Include any after-hours or on-call rotation information, and note backup contacts in case primary
+          responders are unavailable.
+        position: 2
+        subsections: []

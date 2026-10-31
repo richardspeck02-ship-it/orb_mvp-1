@@ -1,0 +1,6 @@
+apiVersion: v2[cite: 44]
+name: orb-generation[cite: 44]
+description: A stand-alone system to generate new documents from existing documents using Generative AI.[cite: 44]
+type: application[cite: 44]
+version: 0.1.0[cite: 44]
+appVersion: 0.0.2[cite: 44]
